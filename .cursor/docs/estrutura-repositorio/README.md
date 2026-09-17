@@ -8,6 +8,8 @@
 
 ## Como aparece no ShipSync
 
+Visão completa para humanos: **[`docs/arquitetura-pastas.md`](../../../docs/arquitetura-pastas.md)**.
+
 ```
 shipsync_hub/
 ├── app/Domain/Shipping/     # VOs, QuoteRequest/Result, ports

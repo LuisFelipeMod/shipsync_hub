@@ -11,7 +11,7 @@ cp .env.example .env   # se ainda não existir
 ./bin/test
 ```
 
-Setup: [docs/setup.md](docs/setup.md).
+Setup: [docs/setup.md](docs/setup.md) · pastas e camadas: [docs/arquitetura-pastas.md](docs/arquitetura-pastas.md).
 
 **Objetivo, progresso e roadmap:** [docs/desenvolvimento.md](docs/desenvolvimento.md) (leia em novas sessões).
 

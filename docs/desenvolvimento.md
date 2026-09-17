@@ -2,7 +2,7 @@
 
 Documento de **continuidade** para novas sessões (humano ou agente). Atualize este arquivo quando uma etapa relevante for concluída.
 
-Referências: prompt original [`p-1.md`](../p-1.md), setup [`setup.md`](setup.md), conceitos [`.cursor/docs/`](../.cursor/docs/README.md).
+Referências: prompt original [`p-1.md`](../p-1.md), setup [`setup.md`](setup.md), pastas [`arquitetura-pastas.md`](arquitetura-pastas.md), conceitos [`.cursor/docs/`](../.cursor/docs/README.md).
 
 ---
 
