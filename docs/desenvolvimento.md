@@ -40,7 +40,7 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **Fase 3 concluída**. Próximo: Fase 4 (API/caso de uso + jobs + cache). Sem endpoint HTTP de cotação ainda.
+Estado atual: **Fase 4 concluída**. Próximo: Fase 5 (resiliência e observabilidade).
 
 ### Infra local
 
@@ -58,7 +58,12 @@ Estado atual: **Fase 3 concluída**. Próximo: Fase 4 (API/caso de uso + jobs + 
 - [`app/Application/Messaging/`](../app/Application/Messaging/): port `MessageQueuePort` + DTO `ReceivedMessage`.
 - [`app/Infrastructure/Aws/`](../app/Infrastructure/Aws/): `AwsClientFactory`, `SqsMessageQueue`, `DynamoDbQuoteRepository`, `ShippingQuoteRecordMapper` (SDK + `config('services.aws')`).
 - Dependência [`aws/aws-sdk-php`](../composer.json) no `composer.json` — rodar `./bin/composer update` após pull.
-- [`app/Providers/AppServiceProvider.php`](../app/Providers/AppServiceProvider.php): bindings dos ports AWS.
+- [`app/Providers/AppServiceProvider.php`](../app/Providers/AppServiceProvider.php): bindings dos ports AWS, carrier stub, cache de cotação.
+- [`app/Application/Shipping/`](../app/Application/Shipping/): `RequestShippingQuoteUseCase`, `QuoteCachePort`, factory e presenter.
+- [`routes/api.php`](../routes/api.php): `POST/GET /api/v1/shipping/quotes` + job [`ProcessShippingQuoteJob`](../app/Jobs/ProcessShippingQuoteJob.php) (fila Redis).
+- [`app/Console/Commands/RequestShippingQuoteCommand.php`](../app/Console/Commands/RequestShippingQuoteCommand.php): `shipping:quote` (caso de uso síncrono).
+- [`app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php`](../app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php): cotação fake até HTTP real.
+- [`config/shipping.php`](../config/shipping.php): TTL do cache Memcached (`SHIPPING_QUOTE_CACHE_TTL`).
 
 ### Testes
 
@@ -66,6 +71,8 @@ Estado atual: **Fase 3 concluída**. Próximo: Fase 4 (API/caso de uso + jobs + 
 - [`tests/Infrastructure/Aws/`](../tests/Infrastructure/Aws/): round-trip SQS e persistência DynamoDB no LocalStack.
 - [`tests/Domain/Shipping/`](../tests/Domain/Shipping/): regras de cotação sem boot Laravel.
 - [`tests/Pest.php`](../tests/Pest.php): Laravel boot só em `Feature/`.
+- [`tests/Feature/Shipping/ShippingQuoteApiTest.php`](../tests/Feature/Shipping/ShippingQuoteApiTest.php): API + job (fila `sync` em testes).
+- [`tests/Unit/Application/Shipping/`](../tests/Unit/Application/Shipping/): caso de uso com doubles.
 - Suite verde com infra up + SDK instalado (Domain + Feature + Infrastructure).
 
 ### Automação e documentação
@@ -77,7 +84,7 @@ Estado atual: **Fase 3 concluída**. Próximo: Fase 4 (API/caso de uso + jobs + 
 
 ### Ainda não implementado (stack alvo)
 
-- Casos de uso de frete/cotação, adapters de transportadoras HTTP.
+- Adapters de transportadoras HTTP (substituir stub).
 - Adapter S3 e consumer SQS de longa duração (worker dedicado).
 - BullMQ, Lambda local/prod, New Relic, Circuit Breaker, Backoff em código.
 - GitHub Actions (CI).
@@ -108,9 +115,9 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 
 ### Fase 4 — API e jobs
 
-- [ ] Endpoint ou comando artisan fino → caso de uso.
-- [ ] Job Laravel + fila Redis; depois migrar/publicar also SQS se fizer sentido arquitetural.
-- [ ] Cache Memcached para respostas de cotação (TTL).
+- [x] Endpoint ou comando artisan fino → caso de uso.
+- [x] Job Laravel + fila Redis; depois migrar/publicar also SQS se fizer sentido arquitetural.
+- [x] Cache Memcached para respostas de cotação (TTL).
 
 ### Fase 5 — Resiliência e observabilidade
 
@@ -144,5 +151,6 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | 2026-09-16 | Fase 1 concluída: `.env` alinhado, compose no ar, Pest verde (fluxo Docker-first) |
 | 2026-09-16 | Fase 2 concluída: VOs/ports de cotação em `app/Domain/Shipping` + suite `tests/Domain` |
 | 2026-09-16 | Fase 3 concluída: adapters SQS/DynamoDB, testes Infrastructure/Aws, doc `.cursor/docs/adapter/` |
+| 2026-09-16 | Fase 4 concluída: API v1 cotação, job Redis, cache Memcached, comando `shipping:quote`, testes Feature/Unit Application |
 
 *Última atualização: 2026-09-16.*
