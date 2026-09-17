@@ -8,6 +8,7 @@ Gateway de logística e fretes — Laravel 11, Clean Architecture, Redis, Memcac
 docker compose up -d
 cp .env.example .env   # se ainda não existir
 ./bin/composer install
+./bin/serve            # API + Swagger UI → http://localhost:8000/api/documentation
 ./bin/test
 ```
 

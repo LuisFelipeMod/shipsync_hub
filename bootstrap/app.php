@@ -1,8 +1,11 @@
 <?php
 
+use App\Infrastructure\Docker\DockerEnvironmentOverrides;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+
+DockerEnvironmentOverrides::applyIfRunningInContainer();
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(

@@ -1,7 +1,25 @@
 # ShipSync Hub — infra local (`docker compose up -d`)
-# Laravel (próximo passo): SESSION_DRIVER=redis, QUEUE_CONNECTION=redis,
-# CACHE_STORE=memcached, persistência de negócio no DynamoDB.
-# AWS SDK sempre com AWS_ENDPOINT=http://localhost:4566
+# Laravel: SESSION_DRIVER=redis, QUEUE_CONNECTION=redis, CACHE_STORE=memcached.
+# HTTP + Swagger UI (profile dev): `docker compose --profile dev up -d web` → :8000
+# AWS SDK: host usa AWS_ENDPOINT=http://localhost:4566; containers usam http://localstack:4566
+
+x-app-dev: &app-dev
+  build:
+    context: ./docker/php
+  working_dir: /var/www/html
+  volumes:
+    - .:/var/www/html
+  depends_on:
+    redis:
+      condition: service_healthy
+    memcached:
+      condition: service_healthy
+    localstack:
+      condition: service_healthy
+  networks:
+    - shipsync
+  profiles:
+    - dev
 
 services:
   # Sessions e jobs do Laravel. Também será o broker do BullMQ
@@ -39,26 +57,30 @@ services:
   # (socket do Podman) fica para um passo seguinte.
   # PHP + Composer para instalar deps e rodar Pest sem PHP no host.
   app:
-    build:
-      context: ./docker/php
-    working_dir: /var/www/html
-    volumes:
-      - .:/var/www/html
+    <<: *app-dev
     environment:
       REDIS_HOST: redis
       MEMCACHED_HOST: memcached
       AWS_ENDPOINT: http://localstack:4566
-    depends_on:
-      redis:
-        condition: service_healthy
-      memcached:
-        condition: service_healthy
-      localstack:
-        condition: service_healthy
-    networks:
-      - shipsync
-    profiles:
-      - dev
+
+  # Laravel HTTP (API + Swagger UI em /api/documentation).
+  web:
+    <<: *app-dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+      # Sobrescreve REDIS/Memcached/AWS do `.env` (127.0.0.1) com nomes de serviço Docker.
+      - docker/env/web.env
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   localstack:
     image: docker.io/localstack/localstack:3.8

@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info:
+  title: ShipSync Hub API
+  version: 1.0.0
+  description: |
+    Gateway de logística e fretes — **versão HTTP v1** (`/api/v1`).
+
+    Breaking changes futuros devem introduzir `/api/v2` com spec em `docs/openapi/v2/`.
+  contact:
+    name: ShipSync Hub
+
+servers:
+  - url: http://localhost:8000
+    description: Laravel `artisan serve` (local)
+
+tags:
+  - name: shipping
+    description: Cotação de frete
+
+paths:
+  /api/v1/shipping/quotes:
+    post:
+      tags: [shipping]
+      operationId: createShippingQuote
+      summary: Solicita cotação de frete (assíncrona)
+      description: |
+        Valida o pedido, enfileira o processamento (Redis) e retorna um identificador
+        para consulta posterior via `GET /api/v1/shipping/quotes/{id}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShippingQuoteRequest'
+            examples:
+              pacoteUnico:
+                summary: Um pacote SP → RJ
+                value:
+                  origin: '01310-100'
+                  destination: '20040-020'
+                  packages:
+                    - weight_grams: 1000
+                      length_cm: 20
+                      width_cm: 15
+                      height_cm: 10
+      responses:
+        '202':
+          description: Cotação aceita e enfileirada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingQuoteAccepted'
+              examples:
+                enfileirado:
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    status: processing
+        '422':
+          description: Payload ou regra de domínio inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                cepInvalido:
+                  value:
+                    message: The given data was invalid.
+                    errors:
+                      request:
+                        - CEP deve ter 8 dígitos válidos.
+
+  /api/v1/shipping/quotes/{id}:
+    get:
+      tags: [shipping]
+      operationId: getShippingQuote
+      summary: Consulta resultado da cotação
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID retornado no POST
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Cotação processada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingQuoteReady'
+              examples:
+                pronto:
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    status: ready
+                    quotes:
+                      - carrier_id: correios
+                        service: PAC
+                        price_cents: 1890
+                        currency: BRL
+                        delivery_days: 8
+                      - carrier_id: jadlog
+                        service: .Package
+                        price_cents: 3100
+                        currency: BRL
+                        delivery_days: 5
+                    cheapest:
+                      carrier_id: correios
+                      service: PAC
+                      price_cents: 1890
+                      currency: BRL
+                      delivery_days: 8
+                    fastest:
+                      carrier_id: correios
+                      service: SEDEX
+                      price_cents: 4200
+                      currency: BRL
+                      delivery_days: 2
+        '404':
+          description: Cotação inexistente ou ainda não persistida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+              examples:
+                naoEncontrada:
+                  value:
+                    message: Cotação não encontrada.
+
+components:
+  schemas:
+    CreateShippingQuoteRequest:
+      type: object
+      required: [origin, destination, packages]
+      properties:
+        origin:
+          type: string
+          description: CEP de origem (8 dígitos, com ou sem hífen)
+          example: '01310-100'
+        destination:
+          type: string
+          description: CEP de destino
+          example: '20040-020'
+        declared_value_cents:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Valor declarado em centavos (BRL)
+        packages:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PackageInput'
+
+    PackageInput:
+      type: object
+      required: [weight_grams, length_cm, width_cm, height_cm]
+      properties:
+        weight_grams:
+          type: integer
+          minimum: 1
+        length_cm:
+          type: integer
+          minimum: 1
+        width_cm:
+          type: integer
+          minimum: 1
+        height_cm:
+          type: integer
+          minimum: 1
+
+    ShippingQuoteAccepted:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [processing]
+
+    ShippingQuoteReady:
+      type: object
+      required: [id, status, quotes, cheapest, fastest]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [ready]
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteOffer'
+        cheapest:
+          $ref: '#/components/schemas/QuoteOffer'
+        fastest:
+          $ref: '#/components/schemas/QuoteOffer'
+
+    QuoteOffer:
+      type: object
+      required: [carrier_id, service, price_cents, currency, delivery_days]
+      properties:
+        carrier_id:
+          type: string
+        service:
+          type: string
+        price_cents:
+          type: integer
+        currency:
+          type: string
+          example: BRL
+        delivery_days:
+          type: integer
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    NotFoundError:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string

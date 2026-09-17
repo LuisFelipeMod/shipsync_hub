@@ -45,7 +45,7 @@ Responder de forma **curta e escaneável**:
 
 Regras:
 
-- **Próximas etapas** = itens ainda `[ ]` em *Próximas etapas*, na ordem das fases (1 → 6).
+- **Próximas etapas** = itens ainda `[ ]` em *Próximas etapas*, na ordem das fases (1 → 7).
 - Se uma fase estiver 100% `[x]`, dizer “Fase N concluída” e apontar a seguinte.
 - Mencionar **TDD** e leitura de `docs/desenvolvimento.md` em novas sessões só se relevante ao pedido.
 - Não listar todo o bootstrap item a item — 4–7 bullets no máximo em “Já entregue”.

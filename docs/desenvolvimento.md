@@ -33,6 +33,7 @@ Metas de processo (do prompt inicial):
 | Observabilidade | New Relic (APM/tracing) |
 | Dev AWS | LocalStack |
 | Testes / CI | Pest (TDD/BDD), GitHub Actions |
+| Documentação HTTP | OpenAPI 3 + Swagger UI |
 
 **Fora do escopo inicial acordado:** MySQL/Postgres no compose — SQLite só para internals Laravel; negócio no DynamoDB.
 
@@ -40,11 +41,11 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **Fase 4 concluída**. Próximo: Fase 5 (resiliência e observabilidade).
+Estado atual: **Fase 5 concluída**. Próximo: Fase 6 (resiliência e observabilidade).
 
 ### Infra local
 
-- [`docker-compose.yml`](../docker-compose.yml): Redis, Memcached, LocalStack; serviço `app` (profile `dev`, PHP 8.4).
+- [`docker-compose.yml`](../docker-compose.yml): Redis, Memcached, LocalStack; serviços `app` e `web` (profile `dev`, PHP 8.4); [`bin/serve`](../bin/serve) expõe Swagger UI na porta 8000.
 - [`localstack/init/ready.d/01-init-aws.sh`](../localstack/init/ready.d/01-init-aws.sh): fila `shipsync-jobs`, DLQ `shipsync-jobs-dlq`, bucket `shipsync-local`, tabela `shipsync-records`.
 - [`docker/php/Dockerfile`](../docker/php/Dockerfile), [`bin/composer`](../bin/composer), [`bin/test`](../bin/test).
 - `.env` do dev alinhado ao [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`). Dependências PHP via container (`vendor/` no volume).
@@ -64,6 +65,8 @@ Estado atual: **Fase 4 concluída**. Próximo: Fase 5 (resiliência e observabil
 - [`app/Console/Commands/RequestShippingQuoteCommand.php`](../app/Console/Commands/RequestShippingQuoteCommand.php): `shipping:quote` (caso de uso síncrono).
 - [`app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php`](../app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php): cotação fake até HTTP real.
 - [`config/shipping.php`](../config/shipping.php): TTL do cache Memcached (`SHIPPING_QUOTE_CACHE_TTL`).
+- [`docs/openapi/v1/openapi.yaml`](../docs/openapi/v1/openapi.yaml): contrato OpenAPI 3 alinhado a `/api/v1`.
+- [`config/openapi.php`](../config/openapi.php) + [`OpenApiDocumentationController`](../app/Http/Controllers/OpenApiDocumentationController.php): Swagger UI (`/api/documentation`) e spec YAML/JSON.
 
 ### Testes
 
@@ -73,6 +76,7 @@ Estado atual: **Fase 4 concluída**. Próximo: Fase 5 (resiliência e observabil
 - [`tests/Pest.php`](../tests/Pest.php): Laravel boot só em `Feature/`.
 - [`tests/Feature/Shipping/ShippingQuoteApiTest.php`](../tests/Feature/Shipping/ShippingQuoteApiTest.php): API + job (fila `sync` em testes).
 - [`tests/Unit/Application/Shipping/`](../tests/Unit/Application/Shipping/): caso de uso com doubles.
+- [`tests/Feature/OpenApi/OpenApiDocumentationTest.php`](../tests/Feature/OpenApi/OpenApiDocumentationTest.php): UI, spec v1 e alinhamento com rotas.
 - Suite verde com infra up + SDK instalado (Domain + Feature + Infrastructure).
 
 ### Automação e documentação
@@ -119,13 +123,20 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 - [x] Job Laravel + fila Redis; depois migrar/publicar also SQS se fizer sentido arquitetural.
 - [x] Cache Memcached para respostas de cotação (TTL).
 
-### Fase 5 — Resiliência e observabilidade
+### Fase 5 — Documentação com Swagger
+
+- [x] Spec OpenAPI 3 versionada + config (`config/openapi.php`); UI Swagger local (YAML canônico em `docs/openapi/v1/`).
+- [x] Documentar `POST/GET /api/v1/shipping/quotes` (request, respostas 202/200/404/422, exemplos).
+- [x] Expor Swagger UI em ambiente local (rota documentada em [`setup.md`](setup.md)).
+- [x] Garantir que a spec OpenAPI versiona junto com `/api/v1` (prefixo e breaking changes explícitos).
+
+### Fase 6 — Resiliência e observabilidade
 
 - [ ] Circuit Breaker + Backoff/Jitter em chamadas HTTP a carriers.
 - [ ] New Relic (env, middleware/spans).
 - [ ] DLQ: monitoramento e reprocessamento manual documentado.
 
-### Fase 6 — CI/CD e produção
+### Fase 7 — CI/CD e produção
 
 - [ ] GitHub Actions: Pest + lint (Pint) em PR.
 - [ ] Pipeline deploy; `AWS_ENDPOINT` vazio em prod.
@@ -152,5 +163,7 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | 2026-09-16 | Fase 2 concluída: VOs/ports de cotação em `app/Domain/Shipping` + suite `tests/Domain` |
 | 2026-09-16 | Fase 3 concluída: adapters SQS/DynamoDB, testes Infrastructure/Aws, doc `.cursor/docs/adapter/` |
 | 2026-09-16 | Fase 4 concluída: API v1 cotação, job Redis, cache Memcached, comando `shipping:quote`, testes Feature/Unit Application |
+| 2026-09-16 | Roadmap: nova Fase 5 (Swagger/OpenAPI); resiliência → Fase 6; CI/CD → Fase 7 |
+| 2026-09-16 | Fase 5 concluída: spec `docs/openapi/v1`, Swagger UI, testes de alinhamento com rotas |
 
 *Última atualização: 2026-09-16.*

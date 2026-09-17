@@ -41,6 +41,7 @@ Setup operacional: [`docs/setup.md`](../../docs/setup.md).
 | [clean-architecture](clean-architecture/README.md) | Domínio e config |
 | [ports](ports/README.md) | Contratos de cotação e persistência |
 | [adapter](adapter/README.md) | Adapters AWS (SQS, DynamoDB) |
+| [openapi](openapi/README.md) | Spec OpenAPI v1 + Swagger UI |
 | [cursor-automation](cursor-automation/README.md) | Skills e hooks |
 | [dev-container](dev-container/README.md) | Serviço `app`, `bin/composer`, `bin/test` |
 | [projeto](projeto/README.md) | Objetivo e status → `docs/desenvolvimento.md` |

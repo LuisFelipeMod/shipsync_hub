@@ -27,6 +27,104 @@ docker compose up -d
 curl -s http://localhost:4566/_localstack/health | head -c 200
 ```
 
+## Docker — rebuild e recriação de containers
+
+Serviços do projeto:
+
+| Serviço | Profile | Imagem | Porta |
+|---------|---------|--------|-------|
+| `redis`, `memcached`, `localstack` | (padrão) | pull do registry | 6379, 11211, 4566 |
+| `app`, `web` | `dev` | build [`docker/php/Dockerfile`](../docker/php/Dockerfile) | `web` → 8000 |
+
+**Rebuild** = reconstruir a **imagem** PHP (necessário após mudar o `Dockerfile` ou extensões PECL).  
+**Recriar** = substituir o **container** em execução (compose recria se a config mudou ou após `up --force-recreate`).
+
+### Rebuild da imagem PHP (`app` / `web`)
+
+Use quando alterou `docker/php/Dockerfile` ou o build falhou (ex.: extensão PHP no container):
+
+```bash
+# Rebuild completo, sem cache (mais lento, mais confiável após mudança no Dockerfile)
+docker compose --profile dev build --no-cache web
+
+# Rebuild incremental (aproveita cache de camadas)
+docker compose --profile dev build web
+```
+
+Subir de novo com a imagem nova:
+
+```bash
+docker compose --profile dev up -d --force-recreate web
+```
+
+Atalho equivalente ao fluxo HTTP + Swagger:
+
+```bash
+./bin/serve
+```
+
+(`bin/serve` sobe infra base e faz `up -d --build web`.)
+
+Rebuild só para comandos one-shot (`composer`, `artisan` via `app`):
+
+```bash
+docker compose --profile dev build app
+```
+
+`app` e `web` compartilham a **mesma** imagem; rebuild de um vale para os dois.
+
+### Recriar containers (sem apagar volumes)
+
+Aplica `docker-compose.yml` atualizado ou env novo, **mantendo** dados em `redis_data` e `localstack_data`:
+
+```bash
+# Infra + HTTP (profile dev)
+docker compose up -d
+docker compose --profile dev up -d --force-recreate
+
+# Só o servidor Laravel / Swagger
+docker compose --profile dev up -d --force-recreate web
+```
+
+Parar sem remover containers:
+
+```bash
+docker compose --profile dev stop web app
+docker compose stop
+```
+
+Remover containers parados (volumes **permanecem**):
+
+```bash
+docker compose --profile dev down
+docker compose down
+```
+
+### Recriar do zero (apaga volumes)
+
+**Cuidado:** apaga fila/cache persistido no Redis, estado do LocalStack (filas SQS, tabela DynamoDB, bucket), etc. Use só quando quiser infra “limpa”:
+
+```bash
+docker compose --profile dev down -v
+docker compose down -v
+```
+
+Depois suba de novo e, se necessário, rode migrate / confira init do LocalStack:
+
+```bash
+docker compose up -d
+docker compose --profile dev up -d --build web
+curl -s http://localhost:4566/_localstack/health | head -c 200
+```
+
+### Conferir estado
+
+```bash
+docker compose ps -a
+docker compose --profile dev logs -f web
+docker compose logs -f localstack
+```
+
 ## Dependências PHP
 
 Com PHP no host:
@@ -76,6 +174,45 @@ docker run --rm -v "$PWD:/app" -w /app --network host php:8.4-cli ./vendor/bin/p
 ```
 
 O `composer.json` define `"audit": { "block-insecure": false }` para permitir lock em dev; revise advisories antes de produção.
+
+## Documentação da API (Swagger)
+
+### Docker (recomendado)
+
+Com `.env` criado e dependências instaladas (`./bin/composer install`, `key:generate`, `migrate` — ver acima):
+
+```bash
+./bin/serve
+# ou: docker compose up -d && docker compose --profile dev up -d --build web
+```
+
+| Recurso | URL |
+|---------|-----|
+| Swagger UI | http://localhost:8000/api/documentation |
+| OpenAPI YAML (v1) | http://localhost:8000/docs/openapi/v1/openapi.yaml |
+| OpenAPI JSON | http://localhost:8000/docs/openapi/v1/openapi.json |
+
+O serviço `web` (profile `dev`) sobe `php artisan serve` na porta **8000**. Hosts de infra vêm de [`docker/env/web.env`](../docker/env/web.env) (sobrescreve `127.0.0.1` do `.env` do host) e de [`DockerEnvironmentOverrides`](../app/Infrastructure/Docker/DockerEnvironmentOverrides.php) ao detectar container. Jobs usam `QUEUE_CONNECTION=sync` no container.
+
+Recrie o container após mudar compose/env Docker:
+
+```bash
+docker compose --profile dev up -d --force-recreate web
+```
+
+**`RedisException: Connection refused` na Swagger UI:** o `.env` montado no volume fixava `REDIS_HOST=127.0.0.1` **antes** do `LoadConfiguration` do Laravel. Overrides rodam no início de `bootstrap/app.php` + rotas OpenAPI sem sessão Redis. Recrie o `web` após pull.
+
+Parar: `docker compose --profile dev stop web`
+
+### Host (`php artisan serve`)
+
+Com `OPENAPI_UI_ENABLED=true` no `.env`:
+
+| Recurso | URL |
+|---------|-----|
+| Swagger UI | http://localhost:8000/api/documentation |
+
+A spec versionada fica no repositório em [`docs/openapi/v1/openapi.yaml`](openapi/v1/openapi.yaml) (contrato alinhado a `/api/v1`). Em produção, mantenha `OPENAPI_UI_ENABLED=false`.
 
 ## Testes
 

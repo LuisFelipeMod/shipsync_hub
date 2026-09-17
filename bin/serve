@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+docker compose up -d redis memcached localstack
+docker compose --profile dev up -d --build web
+
+echo ""
+echo "ShipSync Hub — HTTP"
+echo "  Swagger UI:  http://localhost:8000/api/documentation"
+echo "  OpenAPI v1:  http://localhost:8000/docs/openapi/v1/openapi.yaml"
+echo "  Health:      http://localhost:8000/up"
+echo ""
+echo "Logs: docker compose --profile dev logs -f web"

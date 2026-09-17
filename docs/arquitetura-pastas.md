@@ -62,7 +62,7 @@ shipsync_hub/
 ├── routes/                 # web.php, console.php
 ├── storage/                # Cache/logs/sessions de runtime (gitignored em parte)
 ├── tests/                  # Pest: Domain, Feature, Infrastructure, Unit
-├── bin/                    # Atalhos: composer e test via Docker
+├── bin/                    # Atalhos: composer, test e serve (API + Swagger) via Docker
 ├── .cursor/                # Skills, hooks e docs do co-piloto
 ├── docker-compose.yml      # Redis, Memcached, LocalStack, app (profile dev)
 ├── composer.json           # PHP 8.4+, Laravel 11, Pest 3
