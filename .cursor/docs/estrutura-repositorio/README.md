@@ -10,7 +10,7 @@
 
 ```
 shipsync_hub/
-├── app/Domain/              # domínio (placeholder .gitkeep)
+├── app/Domain/Shipping/     # VOs, QuoteRequest/Result, ports
 ├── config/services.php      # bloco `aws`
 ├── docker-compose.yml       # redis, memcached, localstack, app (profile dev)
 ├── docker/php/Dockerfile

@@ -7,7 +7,18 @@ Conceitos técnicos (co-piloto): [`.cursor/docs/README.md`](../.cursor/docs/READ
 ## Pré-requisitos
 
 - Docker + Compose (`docker compose`)
-- PHP **8.4+** e Composer no host (para `./vendor/bin/pest` direto), ou use o container (abaixo)
+- PHP **8.4+** no host é opcional: o fluxo padrão instala deps e roda Pest via container (`./bin/composer`, `./bin/test`)
+
+## Dia a dia
+
+```bash
+docker compose up -d
+./vendor/bin/pest
+# ou, sem PHP no host:
+./bin/test --in-container
+```
+
+Infra esperada: Redis `:6379`, Memcached `:11211`, LocalStack `:4566`. O `.env` deve seguir o [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`).
 
 ## Infra local
 

@@ -3,6 +3,6 @@
 use Tests\TestCase;
 
 /*
-| Testes Feature bootam o Laravel. Infrastructure (TCP/LocalStack) não.
+| Feature boota o Laravel. Domain e Infrastructure não.
 */
 pest()->extend(TestCase::class)->in('Feature');

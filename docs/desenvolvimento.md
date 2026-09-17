@@ -40,33 +40,35 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **fundação pronta**, sem features de negócio (cotação, carriers, consumers SQS).
+Estado atual: **Fases 1 e 2 concluídas**. Próximo: Fase 3 (adapters SQS/DynamoDB no LocalStack). Sem API HTTP de cotação nem consumers ainda.
 
 ### Infra local
 
 - [`docker-compose.yml`](../docker-compose.yml): Redis, Memcached, LocalStack; serviço `app` (profile `dev`, PHP 8.4).
 - [`localstack/init/ready.d/01-init-aws.sh`](../localstack/init/ready.d/01-init-aws.sh): fila `shipsync-jobs`, DLQ `shipsync-jobs-dlq`, bucket `shipsync-local`, tabela `shipsync-records`.
 - [`docker/php/Dockerfile`](../docker/php/Dockerfile), [`bin/composer`](../bin/composer), [`bin/test`](../bin/test).
+- `.env` do dev alinhado ao [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`). Dependências PHP via container (`vendor/` no volume).
 
 ### Aplicação Laravel
 
 - Laravel **11** + Pest **3**, PHP **≥ 8.4** (`composer.json` / lock).
 - [`.env.example`](../.env.example): `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`, `CACHE_STORE=memcached`, `AWS_ENDPOINT`, recursos LocalStack.
 - [`config/services.php`](../config/services.php): bloco `aws` centralizado.
-- [`app/Domain/`](../app/Domain/): pasta reservada (`.gitkeep`).
+- [`app/Domain/Shipping/`](../app/Domain/Shipping/): VOs (`Cep`, `Money`, `Weight`, `Dimensions`, `Package`), `QuoteRequest`/`Quote`/`QuoteResult`, ports `CarrierQuotePort` e `QuoteRepositoryPort`.
 
 ### Testes
 
 - [`tests/Infrastructure/LocalServicesHealthTest.php`](../tests/Infrastructure/LocalServicesHealthTest.php): Redis PONG, Memcached STAT, health LocalStack (sqs/s3/dynamodb).
+- [`tests/Domain/Shipping/`](../tests/Domain/Shipping/): regras de cotação sem boot Laravel.
 - [`tests/Pest.php`](../tests/Pest.php): Laravel boot só em `Feature/`.
-- Suite verde quando infra está up (5 testes no bootstrap).
+- Suite verde com infra up (22 testes: Domain + Feature + Infrastructure).
 
 ### Automação e documentação
 
 - **Skills:** `.cursor/skills/shipsync-{hub,tdd,architecture,aws,concept-docs,desenvolvimento}`.
 - **Hooks:** `validate-commit-safe.sh` (commit/add + pedido de commit no chat), lembrete infra Pest, pós-edição TDD/AWS, sync roadmap → skill `shipsync-desenvolvimento`.
-- **Conceitos:** [`.cursor/docs/`](../.cursor/docs/README.md) (compose, redis, memcached, localstack, dlq, etc.).
-- [`docs/setup.md`](setup.md): Docker, Composer, extensões Fedora.
+- **Conceitos:** [`.cursor/docs/`](../.cursor/docs/README.md) (compose, redis, memcached, localstack, dlq, ports, etc.).
+- [`docs/setup.md`](setup.md): dia a dia Docker-first + Pest.
 
 ### Ainda não implementado (stack alvo)
 
@@ -74,7 +76,6 @@ Estado atual: **fundação pronta**, sem features de negócio (cotação, carrie
 - SDK AWS em `app/Infrastructure` (SQS consumer, DynamoDB repository, S3).
 - BullMQ, Lambda local/prod, New Relic, Circuit Breaker, Backoff em código.
 - GitHub Actions (CI).
-- Configuração real de session/cache/queue Redis/Memcached na app (`.env` do dev).
 
 ---
 
@@ -84,15 +85,15 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 
 ### Fase 1 — Ambiente de dev confiável
 
-- [ ] Garantir `composer install` no host (Fedora: `php-xml`, `php-mbstring`, etc.) ou fluxo `./bin/composer`.
-- [ ] `.env` alinhado ao `.env.example` (Redis/Memcached/drivers).
-- [ ] `docker compose up -d` documentado no dia a dia; CI local: `./vendor/bin/pest`.
+- [x] Garantir `composer install` no host (Fedora: `php-xml`, `php-mbstring`, etc.) ou fluxo `./bin/composer`.
+- [x] `.env` alinhado ao `.env.example` (Redis/Memcached/drivers).
+- [x] `docker compose up -d` documentado no dia a dia; CI local: `./vendor/bin/pest`.
 
 ### Fase 2 — Primeiro vertical slice (domínio)
 
-- [ ] Modelar entidades/value objects iniciais em `app/Domain` (ex.: pedido de cotação, resultado).
-- [ ] Definir **ports** (interfaces) para cotação externa e persistência.
-- [ ] Testes **Unit/Domain** sem Laravel.
+- [x] Modelar entidades/value objects iniciais em `app/Domain` (ex.: pedido de cotação, resultado).
+- [x] Definir **ports** (interfaces) para cotação externa e persistência.
+- [x] Testes **Unit/Domain** sem Laravel.
 
 ### Fase 3 — Infraestrutura AWS (LocalStack)
 
@@ -135,5 +136,7 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | Data (aprox.) | Entrega |
 |---------------|---------|
 | 2026-09-16 | Bootstrap: compose, LocalStack init, teste infra Pest, Laravel+Pest, skills/hooks, docs conceito + setup |
+| 2026-09-16 | Fase 1 concluída: `.env` alinhado, compose no ar, Pest verde (fluxo Docker-first) |
+| 2026-09-16 | Fase 2 concluída: VOs/ports de cotação em `app/Domain/Shipping` + suite `tests/Domain` |
 
 *Última atualização: 2026-09-16.*

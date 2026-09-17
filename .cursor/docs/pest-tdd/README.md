@@ -11,6 +11,7 @@
 | Arquivo | Papel |
 |---------|--------|
 | [`tests/Pest.php`](../../../tests/Pest.php) | `TestCase` só em `Feature/` |
+| [`tests/Domain/Shipping/`](../../../tests/Domain/Shipping/) | VOs, pedido/resultado de cotação e ports (sem Laravel) |
 | [`tests/Infrastructure/LocalServicesHealthTest.php`](../../../tests/Infrastructure/LocalServicesHealthTest.php) | Redis, Memcached, LocalStack health |
 | [`phpunit.xml`](../../../phpunit.xml) | Suite `Infrastructure` + env de hosts/portas |
 | [`composer.json`](../../../composer.json) | Script `composer test` → Pest |

@@ -8,7 +8,7 @@
 
 ## Como aparece no ShipSync
 
-- Pasta reservada: [`app/Domain/`](../../../app/Domain/) (`.gitkeep` — implementação vem feature a feature).
+- Domínio inicial: [`app/Domain/Shipping/`](../../../app/Domain/Shipping/) (`QuoteRequest`, `QuoteResult`, VOs, ports).
 - Alvo de camadas (skill `shipsync-architecture`):
   - `app/Domain` — entidades, contratos, exceções
   - `app/Application` — casos de uso (a criar)

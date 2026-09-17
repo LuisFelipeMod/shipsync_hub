@@ -7,10 +7,8 @@ Gateway de logística e fretes — Laravel 11, Clean Architecture, Redis, Memcac
 ```bash
 docker compose up -d
 cp .env.example .env   # se ainda não existir
-composer install
-php artisan key:generate
-touch database/database.sqlite
-./vendor/bin/pest --filter=LocalServices
+./bin/composer install
+./bin/test
 ```
 
 Setup: [docs/setup.md](docs/setup.md).
