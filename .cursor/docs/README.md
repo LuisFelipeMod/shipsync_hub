@@ -43,6 +43,8 @@ Setup operacional: [`docs/setup.md`](../../docs/setup.md).
 | [adapter](adapter/README.md) | Adapters AWS (SQS, DynamoDB) |
 | [openapi](openapi/README.md) | Spec OpenAPI v1 + Swagger UI |
 | [circuit-breaker](circuit-breaker/README.md) | Retries, breaker e estado em cache |
+| [newrelic](newrelic/README.md) | APM, middleware e spans |
+| [rabbitmq](rabbitmq/README.md) | Filas AMQP e workers locais |
 | [cursor-automation](cursor-automation/README.md) | Skills e hooks |
 | [dev-container](dev-container/README.md) | Serviço `app`, `bin/composer`, `bin/test` |
 | [projeto](projeto/README.md) | Objetivo e status → `docs/desenvolvimento.md` |

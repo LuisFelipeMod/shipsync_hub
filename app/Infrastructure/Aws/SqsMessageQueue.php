@@ -9,7 +9,34 @@ final class SqsMessageQueue implements MessageQueuePort
 {
     private ?string $queueUrl = null;
 
-    public function __construct(private readonly AwsClientFactory $factory) {}
+    public function __construct(
+        private readonly AwsClientFactory $factory,
+        private readonly ?string $queueName = null,
+    ) {}
+
+    public static function main(AwsClientFactory $factory): self
+    {
+        return new self($factory, (string) ($factory->config()['sqs_queue'] ?? 'shipsync-jobs'));
+    }
+
+    public static function deadLetter(AwsClientFactory $factory): self
+    {
+        return new self($factory, (string) ($factory->config()['sqs_dlq'] ?? 'shipsync-jobs-dlq'));
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return array<string, string>
+     */
+    public function queueAttributes(array $names): array
+    {
+        $result = $this->factory->sqs()->getQueueAttributes([
+            'QueueUrl' => $this->queueUrl(),
+            'AttributeNames' => $names,
+        ]);
+
+        return $result['Attributes'] ?? [];
+    }
 
     public function publish(string $body): string
     {
@@ -56,7 +83,7 @@ final class SqsMessageQueue implements MessageQueuePort
             return $this->queueUrl;
         }
 
-        $queueName = (string) ($this->factory->config()['sqs_queue'] ?? 'shipsync-jobs');
+        $queueName = $this->queueName ?? (string) ($this->factory->config()['sqs_queue'] ?? 'shipsync-jobs');
         $result = $this->factory->sqs()->getQueueUrl(['QueueName' => $queueName]);
         $this->queueUrl = (string) $result['QueueUrl'];
 

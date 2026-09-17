@@ -5,17 +5,15 @@ namespace App\Infrastructure\Aws;
 use App\Domain\Shipping\QuoteRepositoryPort;
 use App\Domain\Shipping\QuoteRequest;
 use App\Domain\Shipping\QuoteResult;
-use Aws\DynamoDb\Marshaler;
-
 final class DynamoDbQuoteRepository implements QuoteRepositoryPort
 {
-    private Marshaler $marshaler;
+    private DynamoDbAttributeMarshaler $marshaler;
 
     public function __construct(
         private readonly AwsClientFactory $factory,
         private readonly ShippingQuoteRecordMapper $mapper,
     ) {
-        $this->marshaler = new Marshaler;
+        $this->marshaler = new DynamoDbAttributeMarshaler;
     }
 
     public function save(string $id, QuoteRequest $request, QuoteResult $result): void

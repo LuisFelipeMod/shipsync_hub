@@ -28,7 +28,7 @@ Metas de processo (do prompt inicial):
 | Persistência de negócio | DynamoDB |
 | Arquivos | S3 |
 | Compute (event-driven) | AWS Lambda |
-| Assincronismo local (futuro) | BullMQ sobre Redis (concorrência limitada) |
+| Mensageria local / workers | RabbitMQ (concorrência e filas complementares ao Redis/SQS) |
 | Resiliência | Circuit Breaker, Exponential Backoff + Jitter |
 | Observabilidade | New Relic (APM/tracing) |
 | Dev AWS | LocalStack |
@@ -41,11 +41,11 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit breaker + backoff entregues; próximo: New Relic e DLQ operacional.
+Estado atual: **Fases 6 e 7 concluídas**. Próximo foco: **Fase 8** (CI/CD e deploy).
 
 ### Infra local
 
-- [`docker-compose.yml`](../docker-compose.yml): Redis, Memcached, LocalStack; serviços `app` e `web` (profile `dev`, PHP 8.4); [`bin/serve`](../bin/serve) expõe Swagger UI na porta 8000.
+- [`docker-compose.yml`](../docker-compose.yml): Redis, Memcached, RabbitMQ, LocalStack; serviços `app` e `web` (profile `dev`, PHP 8.4); [`bin/serve`](../bin/serve) expõe UI e Swagger na porta 8000.
 - [`localstack/init/ready.d/01-init-aws.sh`](../localstack/init/ready.d/01-init-aws.sh): fila `shipsync-jobs`, DLQ `shipsync-jobs-dlq`, bucket `shipsync-local`, tabela `shipsync-records`.
 - [`docker/php/Dockerfile`](../docker/php/Dockerfile), [`bin/composer`](../bin/composer), [`bin/test`](../bin/test).
 - `.env` do dev alinhado ao [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`). Dependências PHP via container (`vendor/` no volume).
@@ -53,11 +53,15 @@ Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit 
 ### Aplicação Laravel
 
 - Laravel **11** + Pest **3**, PHP **≥ 8.4** (`composer.json` / lock).
-- [`.env.example`](../.env.example): `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`, `CACHE_STORE=memcached`, `AWS_ENDPOINT`, recursos LocalStack.
+- [`.env.example`](../.env.example): Redis, Memcached, `AWS_ENDPOINT`, `SQS_DLQ`, `NEW_RELIC_*`, `RABBITMQ_*`.
 - [`config/services.php`](../config/services.php): bloco `aws` centralizado.
 - [`app/Domain/Shipping/`](../app/Domain/Shipping/): VOs (`Cep`, `Money`, `Weight`, `Dimensions`, `Package`), `QuoteRequest`/`Quote`/`QuoteResult`, ports `CarrierQuotePort` e `QuoteRepositoryPort`.
 - [`app/Application/Messaging/`](../app/Application/Messaging/): port `MessageQueuePort` + DTO `ReceivedMessage`.
-- [`app/Infrastructure/Aws/`](../app/Infrastructure/Aws/): `AwsClientFactory`, `SqsMessageQueue`, `DynamoDbQuoteRepository`, `ShippingQuoteRecordMapper` (SDK + `config('services.aws')`).
+- [`app/Infrastructure/Aws/`](../app/Infrastructure/Aws/): `AwsClientFactory`, `SqsMessageQueue`, `SqsDeadLetterQueueService`, `DynamoDbQuoteRepository`, `ShippingQuoteRecordMapper` (SDK + `config('services.aws')`).
+- Comandos DLQ: `shipsync:dlq:monitor`, `shipsync:dlq:reprocess`.
+- [`config/newrelic.php`](../config/newrelic.php) + [`ObserveHttpRequests`](../app/Http/Middleware/ObserveHttpRequests.php): APM New Relic (NoOp sem agente).
+- [`config/queue.php`](../config/queue.php): conexão `rabbitmq` (`vladimir-yuldashev/laravel-queue-rabbitmq`).
+- UI: [`layouts/shipsync`](../resources/views/layouts/shipsync.blade.php), [`/quotes`](../routes/web.php) consumindo API v1 via fetch.
 - Dependência [`aws/aws-sdk-php`](../composer.json) no `composer.json` — rodar `./bin/composer update` após pull.
 - [`app/Providers/AppServiceProvider.php`](../app/Providers/AppServiceProvider.php): bindings dos ports AWS, carrier stub, cache de cotação.
 - [`app/Application/Shipping/`](../app/Application/Shipping/): `RequestShippingQuoteUseCase`, `QuoteCachePort`, factory e presenter.
@@ -71,7 +75,7 @@ Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit 
 
 ### Testes
 
-- [`tests/Infrastructure/LocalServicesHealthTest.php`](../tests/Infrastructure/LocalServicesHealthTest.php): Redis PONG, Memcached STAT, health LocalStack (sqs/s3/dynamodb).
+- [`tests/Infrastructure/LocalServicesHealthTest.php`](../tests/Infrastructure/LocalServicesHealthTest.php): Redis, Memcached, RabbitMQ AMQP, health LocalStack.
 - [`tests/Infrastructure/Aws/`](../tests/Infrastructure/Aws/): round-trip SQS e persistência DynamoDB no LocalStack.
 - [`tests/Domain/Shipping/`](../tests/Domain/Shipping/): regras de cotação sem boot Laravel.
 - [`tests/Pest.php`](../tests/Pest.php): Laravel boot só em `Feature/`.
@@ -79,6 +83,8 @@ Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit 
 - [`tests/Unit/Application/Shipping/`](../tests/Unit/Application/Shipping/): caso de uso com doubles.
 - [`tests/Feature/OpenApi/OpenApiDocumentationTest.php`](../tests/Feature/OpenApi/OpenApiDocumentationTest.php): UI, spec v1 e alinhamento com rotas.
 - [`tests/Unit/Infrastructure/Resilience/`](../tests/Unit/Infrastructure/Resilience/): breaker, backoff e adapter resiliente.
+- [`tests/Infrastructure/Aws/SqsDeadLetterQueueTest.php`](../tests/Infrastructure/Aws/SqsDeadLetterQueueTest.php): reprocess DLQ.
+- [`tests/Feature/Shipping/ShippingQuoteUiTest.php`](../tests/Feature/Shipping/ShippingQuoteUiTest.php): layout web de cotações.
 - Suite verde com infra up + SDK instalado (Domain + Feature + Infrastructure).
 
 ### Automação e documentação
@@ -92,8 +98,8 @@ Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit 
 
 - Adapters de transportadoras HTTP (substituir stub).
 - Adapter S3 e consumer SQS de longa duração (worker dedicado).
-- BullMQ, Lambda local/prod, New Relic.
-- GitHub Actions (CI).
+- Lambda local/prod.
+- GitHub Actions (CI) e pipeline deploy.
 
 ---
 
@@ -135,14 +141,20 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 ### Fase 6 — Resiliência e observabilidade
 
 - [x] Circuit Breaker + Backoff/Jitter em chamadas HTTP a carriers.
-- [ ] New Relic (env, middleware/spans).
-- [ ] DLQ: monitoramento e reprocessamento manual documentado.
+- [x] New Relic (env, middleware/spans).
+- [x] DLQ: monitoramento e reprocessamento manual documentado.
+- [x] RabbitMQ: serviço no compose, config Laravel (ou bridge) e documentação de workers/concorrência local.
 
-### Fase 7 — CI/CD e produção
+### Fase 7 — Layout Laravel (uso da API)
+
+- [x] Layout base Blade (ou stack front acordada) alinhado ao produto ShipSync.
+- [x] Telas/fluxos para solicitar e consultar cotações consumindo `/api/v1/shipping/quotes`.
+- [x] Rotas web, auth mínima se necessário, e registro em [`setup.md`](setup.md).
+
+### Fase 8 — CI/CD e produção
 
 - [ ] GitHub Actions: Pest + lint (Pint) em PR.
 - [ ] Pipeline deploy; `AWS_ENDPOINT` vazio em prod.
-- [ ] BullMQ (worker Node ou bridge) se ainda necessário para concorrência local.
 
 ---
 
@@ -168,5 +180,8 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | 2026-09-16 | Roadmap: nova Fase 5 (Swagger/OpenAPI); resiliência → Fase 6; CI/CD → Fase 7 |
 | 2026-09-16 | Fase 5 concluída: spec `docs/openapi/v1`, Swagger UI, testes de alinhamento com rotas |
 | 2026-09-17 | Fase 6 (parcial): circuit breaker + backoff/jitter no `CarrierQuotePort`, testes Unit/Resilience |
+| 2026-09-17 | Roadmap: RabbitMQ na Fase 6 (substitui BullMQ); nova Fase 7 (layout Laravel para API); CI/CD → Fase 8 |
+| 2026-09-17 | Fase 6 concluída: New Relic (middleware/spans), DLQ monitor/reprocess, RabbitMQ no compose |
+| 2026-09-17 | Fase 7 concluída: layout Blade `/quotes` consumindo API v1 |
 
 *Última atualização: 2026-09-17.*

@@ -1,6 +1,7 @@
 <?php
 
 use App\Application\Shipping\QuoteCachePort;
+use App\Infrastructure\Observability\NoOpTransactionTracer;
 use App\Application\Shipping\RequestShippingQuoteUseCase;
 use App\Domain\Shipping\CarrierQuotePort;
 use App\Domain\Shipping\Cep;
@@ -67,7 +68,7 @@ describe('RequestShippingQuoteUseCase', function () {
             }
         };
 
-        $useCase = new RequestShippingQuoteUseCase($carrier, $repository, $cache);
+        $useCase = new RequestShippingQuoteUseCase($carrier, $repository, $cache, new NoOpTransactionTracer);
         $result = $useCase->execute('quote-1', $request);
 
         expect($state->carrierCalls)->toBe(1)
@@ -125,7 +126,7 @@ describe('RequestShippingQuoteUseCase', function () {
             public function put(QuoteRequest $request, QuoteResult $result): void {}
         };
 
-        $useCase = new RequestShippingQuoteUseCase($carrier, $repository, $cache);
+        $useCase = new RequestShippingQuoteUseCase($carrier, $repository, $cache, new NoOpTransactionTracer);
         $result = $useCase->execute('quote-2', $request);
 
         expect($state->carrierCalls)->toBe(0)

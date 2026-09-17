@@ -9,7 +9,8 @@
         "php": "^8.4",
         "aws/aws-sdk-php": "^3.300",
         "laravel/framework": "^11.39.1",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

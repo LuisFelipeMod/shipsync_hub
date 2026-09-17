@@ -16,14 +16,17 @@ x-app-dev: &app-dev
       condition: service_healthy
     localstack:
       condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
   networks:
     - shipsync
   profiles:
     - dev
 
 services:
-  # Sessions e jobs do Laravel. Também será o broker do BullMQ
-  # (limite de concorrência local). noeviction evita perder chaves de fila.
+  # Sessions e jobs do Laravel (QUEUE_CONNECTION=redis por padrão).
+  # RabbitMQ é opcional para workers/concorrência — ver RABBITMQ_* e Fase 6.
+  # noeviction evita perder chaves de fila Redis.
   redis:
     image: docker.io/library/redis:7-alpine
     ports:
@@ -62,6 +65,9 @@ services:
       REDIS_HOST: redis
       MEMCACHED_HOST: memcached
       AWS_ENDPOINT: http://localstack:4566
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: shipsync
+      RABBITMQ_PASSWORD: shipsync
 
   # Laravel HTTP (API + Swagger UI em /api/documentation).
   web:
@@ -81,6 +87,24 @@ services:
       timeout: 5s
       retries: 6
       start_period: 15s
+
+  rabbitmq:
+    image: docker.io/library/rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: shipsync
+      RABBITMQ_DEFAULT_PASS: shipsync
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - shipsync
 
   localstack:
     image: docker.io/localstack/localstack:3.8
@@ -107,4 +131,5 @@ networks:
 
 volumes:
   redis_data:
+  rabbitmq_data:
   localstack_data:

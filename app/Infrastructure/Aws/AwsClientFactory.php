@@ -16,7 +16,8 @@ final class AwsClientFactory
      *     use_path_style_endpoint?: bool|null,
      *     bucket?: string|null,
      *     dynamodb_table?: string|null,
-     *     sqs_queue?: string|null
+     *     sqs_queue?: string|null,
+     *     sqs_dlq?: string|null
      * }  $config
      */
     public function __construct(private readonly array $config) {}
@@ -35,6 +36,7 @@ final class AwsClientFactory
             'bucket' => getenv('AWS_BUCKET') ?: 'shipsync-local',
             'dynamodb_table' => getenv('DYNAMODB_TABLE') ?: 'shipsync-records',
             'sqs_queue' => getenv('SQS_QUEUE') ?: 'shipsync-jobs',
+            'sqs_dlq' => getenv('SQS_DLQ') ?: 'shipsync-jobs-dlq',
         ]);
     }
 

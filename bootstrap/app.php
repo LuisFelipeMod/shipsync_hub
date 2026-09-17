@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ObserveHttpRequests;
 use App\Infrastructure\Docker\DockerEnvironmentOverrides;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->append(ObserveHttpRequests::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -1,14 +1,20 @@
 <?php
 
 use App\Http\Controllers\OpenApiDocumentationController;
+use App\Http\Controllers\ShippingQuoteUiController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/quotes');
+
+Route::get('/quotes', [ShippingQuoteUiController::class, 'index'])
+    ->name('shipping.quotes.ui');
+
+Route::get('/quotes/{id}', [ShippingQuoteUiController::class, 'show'])
+    ->whereUuid('id')
+    ->name('shipping.quotes.show');
 
 Route::middleware([])
     ->withoutMiddleware([

@@ -22,6 +22,8 @@ final class DockerEnvironmentOverrides
             'MEMCACHED_PORT' => '11211',
             'AWS_ENDPOINT' => 'http://localstack:4566',
             'PHP_CLI_SERVER_WORKERS' => '1',
+            // UI /quotes e API dev: processa ProcessShippingQuoteJob na mesma requisição (sem worker Redis).
+            'QUEUE_CONNECTION' => 'sync',
         ];
 
         foreach ($overrides as $key => $value) {

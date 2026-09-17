@@ -3,13 +3,17 @@
 namespace App\Providers;
 
 use App\Application\Messaging\MessageQueuePort;
+use App\Application\Observability\TransactionTracerPort;
 use App\Application\Shipping\QuoteCachePort;
 use App\Domain\Shipping\CarrierQuotePort;
 use App\Domain\Shipping\QuoteRepositoryPort;
 use App\Infrastructure\Aws\AwsClientFactory;
 use App\Infrastructure\Aws\DynamoDbQuoteRepository;
 use App\Infrastructure\Aws\ShippingQuoteRecordMapper;
+use App\Infrastructure\Aws\SqsDeadLetterQueueService;
 use App\Infrastructure\Aws\SqsMessageQueue;
+use App\Infrastructure\Observability\NewRelicTransactionTracer;
+use App\Infrastructure\Observability\NoOpTransactionTracer;
 use App\Infrastructure\Cache\LaravelQuoteCache;
 use App\Infrastructure\Carriers\CarrierQuotePortFactory;
 use App\Infrastructure\Testing\InMemoryQuoteRepository;
@@ -26,7 +30,25 @@ class AppServiceProvider extends ServiceProvider
             config('services.aws'),
         ));
 
-        $this->app->bind(MessageQueuePort::class, SqsMessageQueue::class);
+        $this->app->bind(MessageQueuePort::class, function ($app): SqsMessageQueue {
+            return SqsMessageQueue::main($app->make(AwsClientFactory::class));
+        });
+        $this->app->singleton(SqsDeadLetterQueueService::class, function ($app): SqsDeadLetterQueueService {
+            $factory = $app->make(AwsClientFactory::class);
+
+            return new SqsDeadLetterQueueService(
+                SqsMessageQueue::deadLetter($factory),
+                SqsMessageQueue::main($factory),
+            );
+        });
+        $this->app->singleton(TransactionTracerPort::class, function (): TransactionTracerPort {
+            $newRelic = new NewRelicTransactionTracer;
+            if ($newRelic->isEnabled()) {
+                return $newRelic;
+            }
+
+            return new NoOpTransactionTracer;
+        });
         if ($this->app->environment('testing')) {
             $this->app->singleton(InMemoryQuoteRepository::class);
             $this->app->bind(QuoteRepositoryPort::class, InMemoryQuoteRepository::class);

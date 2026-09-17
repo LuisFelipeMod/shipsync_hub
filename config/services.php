@@ -44,6 +44,7 @@ return [
         'bucket' => env('AWS_BUCKET'),
         'dynamodb_table' => env('DYNAMODB_TABLE', 'shipsync-records'),
         'sqs_queue' => env('SQS_QUEUE', 'shipsync-jobs'),
+        'sqs_dlq' => env('SQS_DLQ', 'shipsync-jobs-dlq'),
     ],
 
 ];

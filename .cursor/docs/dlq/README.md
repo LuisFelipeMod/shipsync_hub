@@ -11,8 +11,13 @@
 - Criada no init LocalStack: [`01-init-aws.sh`](../../../localstack/init/ready.d/01-init-aws.sh)
   - DLQ: `shipsync-jobs-dlq`
   - Fila: `shipsync-jobs` com `maxReceiveCount=3`
-- `.env.example`: `SQS_QUEUE=shipsync-jobs`
-- Implementação Laravel/SQS virá em `app/Infrastructure` (ainda não implementada).
+- `.env.example`: `SQS_QUEUE`, `SQS_DLQ`
+- Adapters: [`SqsMessageQueue`](../../../app/Infrastructure/Aws/SqsMessageQueue.php) (`main` / `deadLetter`), serviço [`SqsDeadLetterQueueService`](../../../app/Infrastructure/Aws/SqsDeadLetterQueueService.php)
+- Comandos Artisan:
+  - `php artisan shipsync:dlq:monitor` — contagem aproximada; `--peek=N` lista corpo (sem remover)
+  - `php artisan shipsync:dlq:reprocess --limit=10` — republica na fila principal e remove da DLQ
+
+Operação manual documentada em [`docs/setup.md`](../../../docs/setup.md).
 
 ## Erros comuns e causa raiz
 
@@ -22,3 +27,4 @@
 | Nada na DLQ | Consumer não está fazendo receive ou erro não dispara retry |
 | Redrive não funciona | Policy mal formada no create-queue (init) |
 | DLQ enche em dev | Bug no handler; corrigir código antes de reprocessar em massa |
+| Reprocess duplicou job | Mensagem ainda na fila principal — reprocess só após corrigir causa |

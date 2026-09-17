@@ -12,7 +12,8 @@ Arquivo: [`docker-compose.yml`](../../../docker-compose.yml)
 
 | Serviço | Porta | Função |
 |---------|-------|--------|
-| `redis` | 6379 | Session + queue Laravel; futuro BullMQ |
+| `redis` | 6379 | Session + queue Laravel (padrão) |
+| `rabbitmq` | 5672 / 15672 | Filas AMQP opcionais + Management UI |
 | `memcached` | 11211 | Cache de cotações |
 | `localstack` | 4566 | SQS, S3, DynamoDB (+ Lambda on-demand) |
 | `app` | — | PHP 8.4 CLI, volume do projeto, profile `dev` |

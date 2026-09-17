@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Application\Observability\TransactionTracerPort;
 use App\Application\Shipping\QuoteRequestFactory;
 use App\Application\Shipping\RequestShippingQuoteUseCase;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,8 +33,13 @@ class ProcessShippingQuoteJob implements ShouldQueue
     public function handle(
         RequestShippingQuoteUseCase $useCase,
         QuoteRequestFactory $factory,
+        TransactionTracerPort $tracer,
     ): void {
+        $tracer->nameTransaction('job ProcessShippingQuoteJob');
+        $tracer->addAttributes(['quote.id' => $this->quoteId]);
+
         $request = $factory->fromArray($this->payload);
-        $useCase->execute($this->quoteId, $request);
+
+        $tracer->traceSegment('shipping.quote.process', fn () => $useCase->execute($this->quoteId, $request));
     }
 }

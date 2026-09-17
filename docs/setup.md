@@ -18,7 +18,7 @@ docker compose up -d
 ./bin/test --in-container
 ```
 
-Infra esperada: Redis `:6379`, Memcached `:11211`, LocalStack `:4566`. O `.env` deve seguir o [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`).
+Infra esperada: Redis `:6379`, Memcached `:11211`, RabbitMQ `:5672` (UI `:15672`), LocalStack `:4566`. O `.env` deve seguir o [`.env.example`](../.env.example) (Redis, Memcached, `AWS_ENDPOINT`, `RABBITMQ_*`).
 
 ## Infra local
 
@@ -137,15 +137,29 @@ touch database/database.sqlite
 php artisan migrate
 ```
 
-Sem PHP no host (usa container `app`):
+Sem PHP no host (usa container `app` — **recomendado no ShipSync**):
 
 ```bash
 cp .env.example .env
 chmod +x bin/composer bin/test
-./bin/composer install
+docker compose up -d   # redis, memcached, localstack, rabbitmq…
+./bin/composer update  # lock + vendor (inclui aws/aws-sdk-php) no volume montado
 docker compose --profile dev run --rm app php artisan key:generate
 docker compose --profile dev run --rm app touch database/database.sqlite
 docker compose --profile dev run --rm app php artisan migrate
+docker compose --profile dev up -d web
+```
+
+O serviço `web` usa o mesmo `./vendor` montado em `/var/www/html`. Sem `aws/aws-sdk-php` instalado, a API quebra com `Class "Aws\DynamoDb\DynamoDbClient" not found`.
+
+### Permissão negada em `composer.lock` / `vendor/`
+
+Se `./bin/composer` falhar com `Permission denied` ao gravar o lock, o volume foi criado com UID diferente do seu usuário (comum após rodar Composer como root ou `nobody`):
+
+```bash
+sudo chown -R "$(id -un):$(id -gn)" vendor composer.lock composer.json
+./bin/composer update
+docker compose --profile dev up -d --force-recreate web
 ```
 
 ### Fedora — extensões PHP (CLI)
@@ -188,9 +202,11 @@ Com `.env` criado e dependências instaladas (`./bin/composer install`, `key:gen
 
 | Recurso | URL |
 |---------|-----|
+| UI cotações (nova + consulta por ID) | http://localhost:8000/quotes — link direto: `/quotes/{uuid}` |
 | Swagger UI | http://localhost:8000/api/documentation |
 | OpenAPI YAML (v1) | http://localhost:8000/docs/openapi/v1/openapi.yaml |
 | OpenAPI JSON | http://localhost:8000/docs/openapi/v1/openapi.json |
+| RabbitMQ Management | http://localhost:15672 (user/senha dev: `shipsync`) |
 
 O serviço `web` (profile `dev`) sobe `php artisan serve` na porta **8000**. Hosts de infra vêm de [`docker/env/web.env`](../docker/env/web.env) (sobrescreve `127.0.0.1` do `.env` do host) e de [`DockerEnvironmentOverrides`](../app/Infrastructure/Docker/DockerEnvironmentOverrides.php) ao detectar container. Jobs usam `QUEUE_CONNECTION=sync` no container.
 
@@ -213,6 +229,33 @@ Com `OPENAPI_UI_ENABLED=true` no `.env`:
 | Swagger UI | http://localhost:8000/api/documentation |
 
 A spec versionada fica no repositório em [`docs/openapi/v1/openapi.yaml`](openapi/v1/openapi.yaml) (contrato alinhado a `/api/v1`). Em produção, mantenha `OPENAPI_UI_ENABLED=false`.
+
+## New Relic (opcional)
+
+- Variáveis: `NEW_RELIC_ENABLED`, `NEW_RELIC_APP_NAME`, `NEW_RELIC_LICENSE_KEY` no `.env`.
+- Sem extensão PHP `newrelic` em local, o app usa tracer NoOp (sem erro).
+- Middleware [`ObserveHttpRequests`](../app/Http/Middleware/ObserveHttpRequests.php) nomeia transações HTTP quando o agente está ativo.
+
+## DLQ SQS (monitorar e reprocessar)
+
+Com LocalStack no ar e filas provisionadas pelo init:
+
+```bash
+php artisan shipsync:dlq:monitor
+php artisan shipsync:dlq:monitor --peek=5
+php artisan shipsync:dlq:reprocess --limit=10
+```
+
+Fluxo manual: corrigir o bug → `monitor` → `reprocess` com limite pequeno → validar fila principal.
+
+## RabbitMQ (workers Laravel)
+
+1. Subir compose (serviço `rabbitmq`).
+2. `./bin/composer update` (driver `vladimir-yuldashev/laravel-queue-rabbitmq`).
+3. No `.env`: `QUEUE_CONNECTION=rabbitmq` (opcional; padrão do projeto continua `redis`).
+4. Worker: `php artisan queue:work rabbitmq --queue=shipsync-jobs`.
+
+Detalhes: [`.cursor/docs/rabbitmq/`](../.cursor/docs/rabbitmq/README.md).
 
 ## Testes
 

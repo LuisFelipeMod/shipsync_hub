@@ -2,6 +2,7 @@
 
 namespace App\Application\Shipping;
 
+use App\Application\Observability\TransactionTracerPort;
 use App\Domain\Shipping\CarrierQuotePort;
 use App\Domain\Shipping\QuoteRepositoryPort;
 use App\Domain\Shipping\QuoteRequest;
@@ -13,6 +14,7 @@ final class RequestShippingQuoteUseCase
         private readonly CarrierQuotePort $carrier,
         private readonly QuoteRepositoryPort $repository,
         private readonly QuoteCachePort $cache,
+        private readonly TransactionTracerPort $tracer,
     ) {}
 
     public function execute(string $id, QuoteRequest $request): QuoteResult
@@ -24,7 +26,7 @@ final class RequestShippingQuoteUseCase
             return $cached;
         }
 
-        $result = $this->carrier->quote($request);
+        $result = $this->tracer->traceSegment('shipping.carrier.quote', fn () => $this->carrier->quote($request));
         $this->cache->put($request, $result);
         $this->repository->save($id, $request, $result);
 
