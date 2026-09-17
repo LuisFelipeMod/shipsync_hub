@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+docker compose up -d redis memcached localstack
+
+if [[ "${1:-}" == "--in-container" ]]; then
+  shift
+  exec docker compose --profile dev run --rm app \
+    env REDIS_HOST=redis MEMCACHED_HOST=memcached AWS_ENDPOINT=http://localstack:4566 \
+    ./vendor/bin/pest "$@"
+fi
+
+exec ./vendor/bin/pest "$@"

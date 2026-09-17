@@ -1,0 +1,20 @@
+# ShipSync Hub
+
+Gateway de logística e fretes — Laravel 11, Clean Architecture, Redis, Memcached, LocalStack (SQS, S3, DynamoDB), Pest (TDD).
+
+## Início rápido
+
+```bash
+docker compose up -d
+cp .env.example .env   # se ainda não existir
+composer install
+php artisan key:generate
+touch database/database.sqlite
+./vendor/bin/pest --filter=LocalServices
+```
+
+Setup: [docs/setup.md](docs/setup.md).
+
+**Objetivo, progresso e roadmap:** [docs/desenvolvimento.md](docs/desenvolvimento.md) (leia em novas sessões).
+
+Co-piloto: [`.cursor/skills/`](.cursor/skills/) · conceitos: [`.cursor/docs/`](.cursor/docs/README.md).

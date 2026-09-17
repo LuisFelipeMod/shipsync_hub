@@ -1,0 +1,88 @@
+# ShipSync Hub — infra local (`docker compose up -d`)
+# Laravel (próximo passo): SESSION_DRIVER=redis, QUEUE_CONNECTION=redis,
+# CACHE_STORE=memcached, persistência de negócio no DynamoDB.
+# AWS SDK sempre com AWS_ENDPOINT=http://localhost:4566
+
+services:
+  # Sessions e jobs do Laravel. Também será o broker do BullMQ
+  # (limite de concorrência local). noeviction evita perder chaves de fila.
+  redis:
+    image: docker.io/library/redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory-policy noeviction --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - redis_data:/data
+    networks:
+      - shipsync
+
+  # Cache de cotações (CACHE_STORE=memcached). Volátil de propósito.
+  memcached:
+    image: docker.io/library/memcached:1.6-alpine
+    ports:
+      - "11211:11211"
+    command: memcached -m 64
+    healthcheck:
+      test: ["CMD-SHELL", "echo stats | nc -w 1 127.0.0.1 11211 | grep -q STAT"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - shipsync
+
+  # SQS (+ DLQ), S3, DynamoDB. Lambda sobe on-demand; execução de funções
+  # (socket do Podman) fica para um passo seguinte.
+  # PHP + Composer para instalar deps e rodar Pest sem PHP no host.
+  app:
+    build:
+      context: ./docker/php
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    environment:
+      REDIS_HOST: redis
+      MEMCACHED_HOST: memcached
+      AWS_ENDPOINT: http://localstack:4566
+    depends_on:
+      redis:
+        condition: service_healthy
+      memcached:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - shipsync
+    profiles:
+      - dev
+
+  localstack:
+    image: docker.io/localstack/localstack:3.8
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: sqs,s3,dynamodb,lambda
+      AWS_DEFAULT_REGION: us-east-1
+      PERSISTENCE: 1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./localstack/init/ready.d:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - shipsync
+
+networks:
+  shipsync:
+    driver: bridge
+
+volumes:
+  redis_data:
+  localstack_data:

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "bash .cursor/hooks/validate-commit-safe.sh submit",
+        "matcher": "UserPromptSubmit",
+        "failClosed": false
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "bash .cursor/hooks/validate-commit-safe.sh shell",
+        "matcher": "git add|git commit",
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/remind-infra-before-tests.sh",
+        "matcher": "pest|phpunit|artisan test"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/hooks/sync-desenvolvimento-roadmap.sh",
+        "matcher": "Write|StrReplace|ApplyPatch|Edit|Shell"
+      },
+      {
+        "command": ".cursor/hooks/shipsync-post-edit.sh",
+        "matcher": "Write|StrReplace|ApplyPatch|Edit"
+      }
+    ]
+  }
+}
