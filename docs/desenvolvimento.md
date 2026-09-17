@@ -41,7 +41,7 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **Fase 5 concluída**. Próximo: Fase 6 (resiliência e observabilidade).
+Estado atual: **Fase 6 em andamento** (resiliência e observabilidade). Circuit breaker + backoff entregues; próximo: New Relic e DLQ operacional.
 
 ### Infra local
 
@@ -64,7 +64,8 @@ Estado atual: **Fase 5 concluída**. Próximo: Fase 6 (resiliência e observabil
 - [`routes/api.php`](../routes/api.php): `POST/GET /api/v1/shipping/quotes` + job [`ProcessShippingQuoteJob`](../app/Jobs/ProcessShippingQuoteJob.php) (fila Redis).
 - [`app/Console/Commands/RequestShippingQuoteCommand.php`](../app/Console/Commands/RequestShippingQuoteCommand.php): `shipping:quote` (caso de uso síncrono).
 - [`app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php`](../app/Infrastructure/Carriers/StubCarrierQuoteAdapter.php): cotação fake até HTTP real.
-- [`config/shipping.php`](../config/shipping.php): TTL do cache Memcached (`SHIPPING_QUOTE_CACHE_TTL`).
+- [`config/shipping.php`](../config/shipping.php): TTL do cache Memcached (`SHIPPING_QUOTE_CACHE_TTL`) + resiliência (`SHIPPING_CARRIER_*`).
+- [`app/Infrastructure/Resilience/`](../app/Infrastructure/Resilience/) + [`ResilientCarrierQuoteAdapter`](../app/Infrastructure/Carriers/ResilientCarrierQuoteAdapter.php): circuit breaker, backoff/jitter e retries em `CarrierQuotePort`.
 - [`docs/openapi/v1/openapi.yaml`](../docs/openapi/v1/openapi.yaml): contrato OpenAPI 3 alinhado a `/api/v1`.
 - [`config/openapi.php`](../config/openapi.php) + [`OpenApiDocumentationController`](../app/Http/Controllers/OpenApiDocumentationController.php): Swagger UI (`/api/documentation`) e spec YAML/JSON.
 
@@ -77,6 +78,7 @@ Estado atual: **Fase 5 concluída**. Próximo: Fase 6 (resiliência e observabil
 - [`tests/Feature/Shipping/ShippingQuoteApiTest.php`](../tests/Feature/Shipping/ShippingQuoteApiTest.php): API + job (fila `sync` em testes).
 - [`tests/Unit/Application/Shipping/`](../tests/Unit/Application/Shipping/): caso de uso com doubles.
 - [`tests/Feature/OpenApi/OpenApiDocumentationTest.php`](../tests/Feature/OpenApi/OpenApiDocumentationTest.php): UI, spec v1 e alinhamento com rotas.
+- [`tests/Unit/Infrastructure/Resilience/`](../tests/Unit/Infrastructure/Resilience/): breaker, backoff e adapter resiliente.
 - Suite verde com infra up + SDK instalado (Domain + Feature + Infrastructure).
 
 ### Automação e documentação
@@ -90,7 +92,7 @@ Estado atual: **Fase 5 concluída**. Próximo: Fase 6 (resiliência e observabil
 
 - Adapters de transportadoras HTTP (substituir stub).
 - Adapter S3 e consumer SQS de longa duração (worker dedicado).
-- BullMQ, Lambda local/prod, New Relic, Circuit Breaker, Backoff em código.
+- BullMQ, Lambda local/prod, New Relic.
 - GitHub Actions (CI).
 
 ---
@@ -132,7 +134,7 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 
 ### Fase 6 — Resiliência e observabilidade
 
-- [ ] Circuit Breaker + Backoff/Jitter em chamadas HTTP a carriers.
+- [x] Circuit Breaker + Backoff/Jitter em chamadas HTTP a carriers.
 - [ ] New Relic (env, middleware/spans).
 - [ ] DLQ: monitoramento e reprocessamento manual documentado.
 
@@ -165,5 +167,6 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | 2026-09-16 | Fase 4 concluída: API v1 cotação, job Redis, cache Memcached, comando `shipping:quote`, testes Feature/Unit Application |
 | 2026-09-16 | Roadmap: nova Fase 5 (Swagger/OpenAPI); resiliência → Fase 6; CI/CD → Fase 7 |
 | 2026-09-16 | Fase 5 concluída: spec `docs/openapi/v1`, Swagger UI, testes de alinhamento com rotas |
+| 2026-09-17 | Fase 6 (parcial): circuit breaker + backoff/jitter no `CarrierQuotePort`, testes Unit/Resilience |
 
-*Última atualização: 2026-09-16.*
+*Última atualização: 2026-09-17.*

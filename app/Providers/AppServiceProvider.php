@@ -11,7 +11,7 @@ use App\Infrastructure\Aws\DynamoDbQuoteRepository;
 use App\Infrastructure\Aws\ShippingQuoteRecordMapper;
 use App\Infrastructure\Aws\SqsMessageQueue;
 use App\Infrastructure\Cache\LaravelQuoteCache;
-use App\Infrastructure\Carriers\StubCarrierQuoteAdapter;
+use App\Infrastructure\Carriers\CarrierQuotePortFactory;
 use App\Infrastructure\Testing\InMemoryQuoteRepository;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,7 +33,8 @@ class AppServiceProvider extends ServiceProvider
         } else {
             $this->app->bind(QuoteRepositoryPort::class, DynamoDbQuoteRepository::class);
         }
-        $this->app->bind(CarrierQuotePort::class, StubCarrierQuoteAdapter::class);
+        $this->app->singleton(CarrierQuotePortFactory::class);
+        $this->app->bind(CarrierQuotePort::class, fn ($app) => $app->make(CarrierQuotePortFactory::class)->create());
         $this->app->bind(QuoteCachePort::class, function ($app): LaravelQuoteCache {
             return new LaravelQuoteCache(
                 $app->make('cache')->store(),
