@@ -40,7 +40,7 @@ Metas de processo (do prompt inicial):
 
 ## O que já foi desenvolvido (bootstrap)
 
-Estado atual: **Fases 1 e 2 concluídas**. Próximo: Fase 3 (adapters SQS/DynamoDB no LocalStack). Sem API HTTP de cotação nem consumers ainda.
+Estado atual: **Fase 3 concluída**. Próximo: Fase 4 (API/caso de uso + jobs + cache). Sem endpoint HTTP de cotação ainda.
 
 ### Infra local
 
@@ -55,13 +55,18 @@ Estado atual: **Fases 1 e 2 concluídas**. Próximo: Fase 3 (adapters SQS/Dynamo
 - [`.env.example`](../.env.example): `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`, `CACHE_STORE=memcached`, `AWS_ENDPOINT`, recursos LocalStack.
 - [`config/services.php`](../config/services.php): bloco `aws` centralizado.
 - [`app/Domain/Shipping/`](../app/Domain/Shipping/): VOs (`Cep`, `Money`, `Weight`, `Dimensions`, `Package`), `QuoteRequest`/`Quote`/`QuoteResult`, ports `CarrierQuotePort` e `QuoteRepositoryPort`.
+- [`app/Application/Messaging/`](../app/Application/Messaging/): port `MessageQueuePort` + DTO `ReceivedMessage`.
+- [`app/Infrastructure/Aws/`](../app/Infrastructure/Aws/): `AwsClientFactory`, `SqsMessageQueue`, `DynamoDbQuoteRepository`, `ShippingQuoteRecordMapper` (SDK + `config('services.aws')`).
+- Dependência [`aws/aws-sdk-php`](../composer.json) no `composer.json` — rodar `./bin/composer update` após pull.
+- [`app/Providers/AppServiceProvider.php`](../app/Providers/AppServiceProvider.php): bindings dos ports AWS.
 
 ### Testes
 
 - [`tests/Infrastructure/LocalServicesHealthTest.php`](../tests/Infrastructure/LocalServicesHealthTest.php): Redis PONG, Memcached STAT, health LocalStack (sqs/s3/dynamodb).
+- [`tests/Infrastructure/Aws/`](../tests/Infrastructure/Aws/): round-trip SQS e persistência DynamoDB no LocalStack.
 - [`tests/Domain/Shipping/`](../tests/Domain/Shipping/): regras de cotação sem boot Laravel.
 - [`tests/Pest.php`](../tests/Pest.php): Laravel boot só em `Feature/`.
-- Suite verde com infra up (22 testes: Domain + Feature + Infrastructure).
+- Suite verde com infra up + SDK instalado (Domain + Feature + Infrastructure).
 
 ### Automação e documentação
 
@@ -72,8 +77,8 @@ Estado atual: **Fases 1 e 2 concluídas**. Próximo: Fase 3 (adapters SQS/Dynamo
 
 ### Ainda não implementado (stack alvo)
 
-- Casos de uso de frete/cotação, adapters de transportadoras.
-- SDK AWS em `app/Infrastructure` (SQS consumer, DynamoDB repository, S3).
+- Casos de uso de frete/cotação, adapters de transportadoras HTTP.
+- Adapter S3 e consumer SQS de longa duração (worker dedicado).
 - BullMQ, Lambda local/prod, New Relic, Circuit Breaker, Backoff em código.
 - GitHub Actions (CI).
 
@@ -97,9 +102,9 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 
 ### Fase 3 — Infraestrutura AWS (LocalStack)
 
-- [ ] Adapter SQS (publicar/consumir) usando `config('services.aws')`.
-- [ ] Repositório DynamoDB para entidade principal.
-- [ ] Documentar padrão em `.cursor/docs/` (ex.: `strategy`, `adapter`) ao introduzir.
+- [x] Adapter SQS (publicar/consumir) usando `config('services.aws')`.
+- [x] Repositório DynamoDB para entidade principal.
+- [x] Documentar padrão em `.cursor/docs/` (ex.: `strategy`, `adapter`) ao introduzir.
 
 ### Fase 4 — API e jobs
 
@@ -138,5 +143,6 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 | 2026-09-16 | Bootstrap: compose, LocalStack init, teste infra Pest, Laravel+Pest, skills/hooks, docs conceito + setup |
 | 2026-09-16 | Fase 1 concluída: `.env` alinhado, compose no ar, Pest verde (fluxo Docker-first) |
 | 2026-09-16 | Fase 2 concluída: VOs/ports de cotação em `app/Domain/Shipping` + suite `tests/Domain` |
+| 2026-09-16 | Fase 3 concluída: adapters SQS/DynamoDB, testes Infrastructure/Aws, doc `.cursor/docs/adapter/` |
 
 *Última atualização: 2026-09-16.*

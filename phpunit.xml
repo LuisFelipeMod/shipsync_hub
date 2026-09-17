@@ -39,6 +39,13 @@
         <env name="REDIS_PORT" value="6379"/>
         <env name="MEMCACHED_HOST" value="127.0.0.1"/>
         <env name="MEMCACHED_PORT" value="11211"/>
+        <env name="AWS_ACCESS_KEY_ID" value="test"/>
+        <env name="AWS_SECRET_ACCESS_KEY" value="test"/>
+        <env name="AWS_DEFAULT_REGION" value="us-east-1"/>
+        <env name="AWS_USE_PATH_STYLE_ENDPOINT" value="true"/>
+        <env name="AWS_BUCKET" value="shipsync-local"/>
+        <env name="DYNAMODB_TABLE" value="shipsync-records"/>
+        <env name="SQS_QUEUE" value="shipsync-jobs"/>
         <env name="AWS_ENDPOINT" value="http://127.0.0.1:4566"/>
     </php>
 </phpunit>

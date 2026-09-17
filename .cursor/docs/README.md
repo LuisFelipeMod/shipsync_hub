@@ -11,6 +11,7 @@ Setup operacional: [`docs/setup.md`](../../docs/setup.md).
 | Caminho | Papel |
 |---------|--------|
 | [`app/Domain/Shipping/`](../../app/Domain/Shipping/) | Regras de cotação (VOs, ports) |
+| [`app/Infrastructure/Aws/`](../../app/Infrastructure/Aws/) | Adapters SQS e DynamoDB (LocalStack) |
 | [`app/Http/`, `app/Models/`](../../app/) | Camada Laravel padrão (finos; domínio cresce em `Domain/`) |
 | [`config/services.php`](../../config/services.php) | Config AWS centralizada (`AWS_ENDPOINT`, bucket, fila, DynamoDB) |
 | [`docker-compose.yml`](../../docker-compose.yml) | Redis, Memcached, LocalStack, serviço `app` (profile `dev`) |
@@ -39,6 +40,7 @@ Setup operacional: [`docs/setup.md`](../../docs/setup.md).
 | [pest-tdd](pest-tdd/README.md) | Testes e suite Infrastructure |
 | [clean-architecture](clean-architecture/README.md) | Domínio e config |
 | [ports](ports/README.md) | Contratos de cotação e persistência |
+| [adapter](adapter/README.md) | Adapters AWS (SQS, DynamoDB) |
 | [cursor-automation](cursor-automation/README.md) | Skills e hooks |
 | [dev-container](dev-container/README.md) | Serviço `app`, `bin/composer`, `bin/test` |
 | [projeto](projeto/README.md) | Objetivo e status → `docs/desenvolvimento.md` |

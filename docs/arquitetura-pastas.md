@@ -37,8 +37,8 @@ flowchart TB
 | Camada | Pasta | Responsabilidade | Estado hoje |
 |--------|--------|------------------|-------------|
 | Domínio | `app/Domain/` | VOs, entidades, exceções, **ports** (interfaces) | `Shipping/` com cotação |
-| Aplicação | `app/Application/` | Casos de uso, orquestração, DTOs de entrada/saída | Ainda não criada |
-| Infraestrutura | `app/Infrastructure/` | Adapters: SQS, DynamoDB, S3, HTTP de transportadoras | Ainda não criada |
+| Aplicação | `app/Application/` | Casos de uso, orquestração, DTOs de entrada/saída | `Messaging/` (port de fila) |
+| Infraestrutura | `app/Infrastructure/` | Adapters: SQS, DynamoDB, S3, HTTP de transportadoras | `Aws/` (SQS + DynamoDB) |
 | Entrega Laravel | `app/Http/`, `routes/` | Controllers finos, validação HTTP, resposta JSON | Bootstrap Laravel |
 | Framework | `app/Models/`, `app/Providers/` | Internals Laravel (User, providers) | Padrão Laravel |
 
