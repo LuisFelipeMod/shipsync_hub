@@ -50,3 +50,4 @@ Responder em **português** salvo pedido contrário.
 - [shipsync-concept-docs](../shipsync-concept-docs/SKILL.md)
 - [shipsync-desenvolvimento](../shipsync-desenvolvimento/SKILL.md) — roadmap em `docs/desenvolvimento.md`
 - [commit](../commit/SKILL.md) — commits em PT-BR com identidade git do Luis
+- [shipsync-status](../shipsync-status/SKILL.md) — resumo de progresso e próximas etapas

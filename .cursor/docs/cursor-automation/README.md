@@ -18,6 +18,7 @@
 | `shipsync-concept-docs` | Esta pasta `.cursor/docs/` |
 | `shipsync-desenvolvimento` | Atualizar `docs/desenvolvimento.md` |
 | `commit` | Commit de alterações (PT-BR, autor = git do Luis) |
+| `shipsync-status` | Resumo do roadmap (`docs/desenvolvimento.md`) |
 
 **Hooks** ([`.cursor/hooks.json`](../../../.cursor/hooks.json)):
 

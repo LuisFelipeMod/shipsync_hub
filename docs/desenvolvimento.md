@@ -123,7 +123,7 @@ Use **TDD**: Pest primeiro, implementação depois. Marque `[x]` aqui ao conclui
 ## Regras para novas janelas de contexto
 
 1. Ler **este arquivo** + [`p-1.md`](../p-1.md) se o escopo for amplo.
-2. Seguir skills em [`.cursor/skills/shipsync-hub/`](../.cursor/skills/shipsync-hub/SKILL.md).
+2. Seguir skills em [`.cursor/skills/shipsync-hub/`](../.cursor/skills/shipsync-hub/SKILL.md). Resumo rápido: skill [`shipsync-status`](../.cursor/skills/shipsync-status/SKILL.md).
 3. Novo padrão ou infra → `.cursor/docs/<tópico>/README.md` (skill `shipsync-concept-docs`).
 4. Objetivo concluído → skill [`shipsync-desenvolvimento`](../.cursor/skills/shipsync-desenvolvimento/SKILL.md) (hook dispara ao marcar `[x]` ou após testes verdes).
 5. Não commitar `.env`; hooks bloqueiam tentativas comuns.
