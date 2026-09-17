@@ -190,7 +190,6 @@ Use este README para **começar**. Aprofunde nos guias abaixo.
 | [**docs/desenvolvimento.md**](docs/desenvolvimento.md) | Objetivo, o que já foi feito, roadmap e fases |
 | [**docs/arquitetura-pastas.md**](docs/arquitetura-pastas.md) | Onde colocar código (camadas, árvore do repo, convenções) |
 | [**docs/openapi/v1/README.md**](docs/openapi/v1/README.md) | Contrato da API v1 |
-| [**docs/portfolio-showcase.md**](docs/portfolio-showcase.md) | Texto e tags para portfólio |
 
 ### Conceitos técnicos (padrões e infra)
 
